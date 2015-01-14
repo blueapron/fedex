@@ -67,12 +67,14 @@ module Fedex
 
       # Callback used after a failed shipment response.
       def failure_response(api_response, response)
-        error_message = if response[:process_shipment_reply]
-          [response[:process_shipment_reply][:notifications]].flatten.first[:message]
+        if response[:process_shipment_reply]
+          error_message = [response[:process_shipment_reply][:notifications]].flatten.first[:message]
+          error_code = nil
         else
-          api_response["Fault"]["detail"]["fault"]["reason"]
+          error_message = api_response["Fault"]["detail"]["fault"]["reason"]
+          error_code = api_response["Fault"]["detail"]["fault"]["errorCode"]
         end rescue $1
-        raise RateError, error_message
+        raise RateError.new(error_message, code: error_code)
       end
 
       # Callback used after a successful shipment response.

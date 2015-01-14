@@ -34,12 +34,14 @@ module Fedex
 
           Fedex::TrackingInformation.new(options)
         else
-          error_message = if response[:track_reply]
-            response[:track_reply][:notifications][:message]
+          if response[:track_reply]
+            error_message = response[:track_reply][:notifications][:message]
+            error_code = nil
           else
-            api_response["Fault"]["detail"]["fault"]["reason"]
+            error_message = api_response["Fault"]["detail"]["fault"]["reason"]
+            error_code = api_response["Fault"]["detail"]["fault"]["errorCode"]
           end rescue $1
-          raise RateError, error_message
+          raise RateError.new(error_message, code: error_code)
         end
       end
 
