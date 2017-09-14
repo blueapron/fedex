@@ -6,7 +6,7 @@ module Fedex
 
     context "shipments with tracking number", :vcr, :focus do
       let(:options) do
-        { :package_id             => "077973360403984",
+        { :package_id             => "787544334890",
           :package_type           => "TRACKING_NUMBER_OR_DOORTAG",
           :include_detailed_scans => true
         }
@@ -15,7 +15,7 @@ module Fedex
       it "returns events with tracking information" do
         tracking_info = fedex.track(options)
 
-        tracking_info.events.count.should == 7
+        tracking_info.events.count.should == 11
       end
 
       it "fails if using an invalid package type" do

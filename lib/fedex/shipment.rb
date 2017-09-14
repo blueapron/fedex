@@ -3,6 +3,7 @@ require 'fedex/request/label'
 require 'fedex/request/rate'
 require 'fedex/request/tracking_information'
 require 'fedex/request/address'
+require 'fedex/request/ground_close'
 
 module Fedex
   class Shipment
@@ -57,5 +58,9 @@ module Fedex
       Request::TrackingInformation.new(@credentials, options).process_request
     end
 
+    # Performs a ground close
+    def close(options = {})
+      Request::GroundClose.new(@credentials, options).process_request
+    end
   end
 end
