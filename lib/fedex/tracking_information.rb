@@ -49,6 +49,5 @@ module Fedex
         Event.new(event_details)
       end
     end
-
   end
 end

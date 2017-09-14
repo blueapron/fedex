@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'nokogiri',            '>= 1.5.6'
 
   s.add_development_dependency "rspec",   '~> 3.1'
-  s.add_development_dependency 'vcr',     '~> 2.4.0'
+  s.add_development_dependency 'vcr',     '~> 3.0.0'
   s.add_development_dependency 'webmock', '~> 1.8.0'
   s.add_development_dependency 'pry'
   s.add_development_dependency 'rake'
@@ -28,9 +28,5 @@ Gem::Specification.new do |s|
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
-<<<<<<< HEAD
   s.require_paths = ['lib']
-=======
-  s.require_paths = ["lib"]
->>>>>>> Hotfix response parsing for updated httparty dependency
 end

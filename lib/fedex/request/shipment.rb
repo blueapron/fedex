@@ -49,6 +49,8 @@ module Fedex
           add_shipping_charges_payment(xml)
           add_special_services(xml) if @shipping_options[:return_reason] || @shipping_options[:cod] || @shipping_options[:saturday_delivery]
           add_customs_clearance(xml) if @customs_clearance_detail
+          add_saturday_delivery_option(xml)
+          add_delivery_instructions(xml)
           add_custom_components(xml)
           xml.RateRequestTypes "ACCOUNT"
           add_packages(xml)
@@ -62,6 +64,19 @@ module Fedex
             xml.Value @mps[:total_weight][:value]
           }
         end
+      end
+
+      def add_saturday_delivery_option(xml)
+        if @shipping_options[:saturday_delivery]
+          xml.SpecialServicesRequested {
+            xml.SpecialServiceTypes "SATURDAY_DELIVERY"
+          }
+        end
+      end
+
+      def add_delivery_instructions(xml)
+        xml.DeliveryInstructions @shipping_options[:delivery_instructions] if
+          @shipping_options[:delivery_instructions]
       end
 
       # Hook that can be used to add custom parts.

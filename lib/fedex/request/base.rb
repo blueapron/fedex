@@ -12,7 +12,7 @@ module Fedex
       # If true the rate method will return the complete response from the Fedex Web Service
       attr_accessor :debug
       # Fedex Text URL
-      TEST_URL = "https://wsbeta.fedex.com:443/xml/"
+      TEST_URL = 'https://wsbeta.fedex.com:443/xml/'
 
       # Fedex Production URL
       PRODUCTION_URL = "https://ws.fedex.com:443/xml/"
@@ -187,6 +187,7 @@ module Fedex
       # Add shipping charges to xml request
       def add_shipping_charges_payment(xml)
         xml.ShippingChargesPayment{
+<<<<<<< HEAD
           xml.PaymentType @payment_options[:type] || "SENDER"
           xml.Payor{
             if service[:version].to_i >= Fedex::API_VERSION.to_i
@@ -202,6 +203,12 @@ module Fedex
               xml.AccountNumber @payment_options[:account_number] || @credentials.account_number
               xml.CountryCode @payment_options[:country_code] || @shipper[:country_code]
             end
+=======
+          xml.PaymentType @shipping_options[:payment_type] ||= "SENDER"
+          xml.Payor{
+            xml.AccountNumber (@shipping_options[:payor] && @shipping_options[:payor][:account_number]) || @credentials.account_number
+            xml.CountryCode @shipper[:country_code]
+>>>>>>> Adds support for Fedex ground close. Adds supports for delivery instructions. Tracking API v6.
           }
         }
       end

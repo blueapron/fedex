@@ -28,7 +28,7 @@ module Fedex
             error_message = api_response["Fault"]["detail"]["fault"]["reason"]
             error_code = response["Fault"]["detail"]["fault"]["errorCode"]
           end rescue $1
-          raise RateError(error_message, code: error_code)
+          raise RateError.new(error_message, code: error_code)
         end
       end
 

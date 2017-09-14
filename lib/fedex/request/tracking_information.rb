@@ -71,11 +71,13 @@ module Fedex
             xml.TrackingNumberUniqueIdentifier @uuid         if @uuid
             xml.IncludeDetailedScans           @include_detailed_scans
             xml.PagingToken                    @paging_token if @paging_token
+            xml.ShipmentAccountNumber AppConfigs['fedex'][:account_number] if package_type == "FREE_FORM_REFERENCE"
           }
         end
         builder.doc.root.to_xml
       end
 
+      # Use version 6 of tracking API
       def service
         { :id => 'trck', :version => 6 }
       end
