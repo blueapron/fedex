@@ -372,7 +372,7 @@ module Fedex
 
       # Parse response, convert keys to underscore symbols
       def parse_response(response)
-        response = sanitize_response_keys(response.parsed_response)
+        sanitize_response_keys(response.parsed_response)
       end
 
       # Recursively sanitizes the response object by cleaning up any hash keys.
@@ -391,6 +391,10 @@ module Fedex
           "Override service in subclass: {:id => 'service', :version => 1}"
       end
 
+      def response_ns
+        raise NotImplementedError, "#{self.class} must override response_ns"
+      end
+
       # Use GROUND_HOME_DELIVERY for shipments going to a residential address within the US.
       def service_type
         if @recipient[:residential].to_s =~ /true/i and @service_type =~ /GROUND/i and @recipient[:country_code] =~ /US/i
@@ -402,9 +406,28 @@ module Fedex
 
       # Successful request
       def success?(response)
-        (!response[:rate_reply].nil? and %w{SUCCESS WARNING NOTE}.include? response[:rate_reply][:highest_severity])
+        !response[response_ns].nil? &&
+          %w{SUCCESS WARNING NOTE}.include?(response[response_ns][:highest_severity])
       end
 
+      def failure_response(api_response, response)
+        error_code = nil
+        error_message = nil
+
+        if response[response_ns]
+          notification = [response[response_ns][:notifications]].flatten.first
+
+          error_code = notifications.code
+          error_message = notification.message
+        else
+          fault = api_response["Fault"]["detail"]["fault"]
+
+          error_code = fault["errorCode"]
+          error_message = "#{fault["reason"]}\n--#{fault["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
+        end rescue $1
+
+        RateError.new(error_message, error_code)
+      end
     end
   end
 end

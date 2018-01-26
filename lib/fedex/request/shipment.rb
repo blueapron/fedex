@@ -35,6 +35,10 @@ module Fedex
 
       private
 
+      def response_ns
+        :process_shipment_reply
+      end
+
       # Add information for shipments
       def add_requested_shipment(xml)
         xml.RequestedShipment{
@@ -125,16 +129,6 @@ module Fedex
         }
       end
 
-      # Callback used after a failed shipment response.
-      def failure_response(api_response, response)
-        error_message = if response[:process_shipment_reply]
-          [response[:process_shipment_reply][:notifications]].flatten.first[:message]
-        else
-          "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-        end rescue $1
-        raise RateError, error_message
-      end
-
       # Callback used after a successful shipment response.
       def success_response(api_response, response)
         @response_details = response[:process_shipment_reply]
@@ -156,13 +150,6 @@ module Fedex
       def service
         { :id => 'ship', :version => Fedex::API_VERSION }
       end
-
-      # Successful request
-      def success?(response)
-        response[:process_shipment_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:process_shipment_reply][:highest_severity])
-      end
-
     end
   end
 end

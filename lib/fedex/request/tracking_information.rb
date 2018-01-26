@@ -28,29 +28,10 @@ module Fedex
         api_response = self.class.post(api_url, :body => build_xml)
         puts api_response if @debug == true
         response = parse_response(api_response)
-
         if success?(response)
-          options = response[:track_reply][:track_details]
-
-          if response[:track_reply][:duplicate_waybill].downcase == 'true'
-            shipments = []
-            [options].flatten.map do |details|
-              options = {:tracking_number => @package_id, :uuid => details[:tracking_number_unique_identifier]}
-              shipments << Request::TrackingInformation.new(@credentials, options).process_request
-            end
-            shipments.flatten
-          else
-            [options].flatten.map do |details|
-              Fedex::TrackingInformation.new(details)
-            end
-          end
+          success_response(api_response, response)
         else
-          error_message = if response[:track_reply]
-            response[:track_reply][:notifications][:message]
-          else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-          end rescue $1
-          raise RateError, error_message
+          failure_response(api_response, response)
         end
       end
 
@@ -83,16 +64,30 @@ module Fedex
         }
       end
 
-      # Successful request
-      def success?(response)
-        response[:track_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:track_reply][:highest_severity])
+      def success_response(api_response, response)
+        options = response[:track_reply][:track_details]
+
+        if response[:track_reply][:duplicate_waybill].downcase == 'true'
+          shipments = []
+          [options].flatten.map do |details|
+            options = {:tracking_number => @package_id, :uuid => details[:tracking_number_unique_identifier]}
+            shipments << Request::TrackingInformation.new(@credentials, options).process_request
+          end
+          shipments.flatten
+        else
+          [options].flatten.map do |details|
+            Fedex::TrackingInformation.new(details)
+          end
+        end
       end
 
       def package_type_valid?
         Fedex::TrackingInformation::PACKAGE_IDENTIFIER_TYPES.include? package_type
       end
 
+      def response_ns
+        :track_reply
+      end
     end
   end
 end

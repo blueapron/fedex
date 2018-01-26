@@ -18,15 +18,7 @@ module Fedex
         api_response = self.class.post(api_url, :body => build_xml)
         puts api_response if @debug == true
         response = parse_response(api_response)
-        unless success?(response)
-          error_message = if response[:shipment_reply]
-            [response[:shipment_reply][:notifications]].flatten.first[:message]
-          else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n
-            --#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-          end rescue $1
-          raise RateError, error_message
-        end
+        failure_response(api_response, response) unless success?(response)
       end
 
       private
@@ -52,10 +44,8 @@ module Fedex
         { :id => 'ship', :version => Fedex::API_VERSION }
       end
 
-      # Successful request
-      def success?(response)
-        response[:shipment_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:shipment_reply][:highest_severity])
+      def response_ns
+        :shipment_reply
       end
     end
   end

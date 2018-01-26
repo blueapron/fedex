@@ -23,13 +23,7 @@ module Fedex
         if success?(response)
           success_response(response)
         else
-          error_message = if response[:ground_close_reply]
-            [response[:ground_close_reply][:notifications]].flatten.first[:message]
-          else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n
-            --#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-          end rescue $1
-          raise RateError, error_message
+          failure_response(api_response, response)
         end
       end
 
@@ -63,10 +57,8 @@ module Fedex
         { :id => 'clos', :version => '2' }
       end
 
-      # Successful request
-      def success?(response)
-        response[:ground_close_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:ground_close_reply][:highest_severity])
+      def response_ns
+        :ground_close_reply
       end
     end
   end

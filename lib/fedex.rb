@@ -51,5 +51,12 @@ require 'fedex/shipment'
 module Fedex
   require 'fedex/version'
   #Exceptions: Fedex::RateError
-  class RateError < StandardError; end
+  class RateError < StandardError
+    attr_reader :code
+
+    def initialize(message, code = nil)
+      super(message)
+      @code = code
+    end
+  end
 end

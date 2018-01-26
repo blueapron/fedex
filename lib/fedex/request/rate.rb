@@ -9,22 +9,9 @@ module Fedex
         puts api_response if @debug
         response = parse_response(api_response)
         if success?(response)
-          rate_reply_details = response[:rate_reply][:rate_reply_details] || []
-          rate_reply_details = [rate_reply_details] if rate_reply_details.is_a?(Hash)
-
-          rate_reply_details.map do |rate_reply|
-            rate_details = [rate_reply[:rated_shipment_details]].flatten.first[:shipment_rate_detail]
-            rate_details.merge!(service_type: rate_reply[:service_type])
-            rate_details.merge!(transit_time: rate_reply[:transit_time])
-            Fedex::Rate.new(rate_details)
-          end
+          success_response(api_response, response)
         else
-          error_message = if response[:rate_reply]
-            [response[:rate_reply][:notifications]].flatten.first[:message]
-          else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-          end rescue $1
-          raise RateError, error_message
+          failure_response(api_response, response)
         end
       end
 
@@ -69,12 +56,22 @@ module Fedex
         { :id => 'crs', :version => Fedex::API_VERSION }
       end
 
-      # Successful request
-      def success?(response)
-        response[:rate_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:rate_reply][:highest_severity])
+      def success_response
+        success_response(response)
+        rate_reply_details = response[:rate_reply][:rate_reply_details] || []
+        rate_reply_details = [rate_reply_details] if rate_reply_details.is_a?(Hash)
+
+        rate_reply_details.map do |rate_reply|
+          rate_details = [rate_reply[:rated_shipment_details]].flatten.first[:shipment_rate_detail]
+          rate_details.merge!(service_type: rate_reply[:service_type])
+          rate_details.merge!(transit_time: rate_reply[:transit_time])
+          Fedex::Rate.new(rate_details)
+        end
       end
 
+      def response_ns
+        :rate_reply
+      end
     end
   end
 end

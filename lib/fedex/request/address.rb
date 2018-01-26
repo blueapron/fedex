@@ -18,16 +18,9 @@ module Fedex
         puts api_response if @debug == true
         response = parse_response(api_response)
         if success?(response)
-          options = response[:address_validation_reply][:address_results][:proposed_address_details]
-          options = options.first if options.is_a? Array
-          Fedex::Address.new(options)
+          success_response(api_response, response)
         else
-          error_message = if response[:address_validation_reply]
-            [response[:address_validation_reply][:notifications]].flatten.first[:message]
-          else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
-          end rescue $1
-          raise RateError, error_message
+          failure_response(api_response, response)
         end
       end
 
@@ -86,12 +79,15 @@ module Fedex
         { :id => 'aval', :version => 2 }
       end
 
-      # Successful request
-      def success?(response)
-        response[:address_validation_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:address_validation_reply][:highest_severity])
+      def success_response(api_response, response)
+        options = response[:address_validation_reply][:address_results][:proposed_address_details]
+        options = options.first if options.is_a? Array
+        Fedex::Address.new(options)
       end
 
+      def response_ns
+        :address_validation_reply
+      end
     end
   end
 end

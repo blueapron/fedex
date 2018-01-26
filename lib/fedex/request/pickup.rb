@@ -96,25 +96,13 @@ module Fedex
         }
       end
 
-      # Callback used after a failed pickup response.
-      def failure_response(api_response, response)
-        error_message = if response[:create_pickup_reply]
-          [response[:create_pickup_reply][:notifications]].flatten.first[:message]
-        else
-          "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{Array(api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"]).join("\n--")}"
-        end rescue $1
-        raise RateError, error_message
-      end
-
       # Callback used after a successful pickup response.
       def success_response(api_response, response)
         @response_details = response[:create_pickup_reply]
       end
 
-      # Successful request
-      def success?(response)
-        response[:create_pickup_reply] &&
-          %w{SUCCESS WARNING NOTE}.include?(response[:create_pickup_reply][:highest_severity])
+      def response_ns
+        :create_pickup_reply
       end
     end
   end
