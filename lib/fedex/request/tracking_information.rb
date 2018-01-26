@@ -45,12 +45,16 @@ module Fedex
             end
           end
         else
-          error_message = if response[:track_reply]
-            response[:track_reply][:notifications][:message]
+          if response[:track_reply]
+            notifications = [response[:track_reply][:notifications]].flatten
+            notification = [notifications].flatten.first
+            error_message = notification[:message]
+            error_code = notification[:code]
           else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
+            error_message = api_response["Fault"]["detail"]["fault"]["reason"]
+            error_code = api_response["Fault"]["detail"]["fault"]["errorCode"]
           end rescue $1
-          raise RateError, error_message
+          raise RateError.new(error_message, code: error_code)
         end
       end
 
@@ -67,11 +71,13 @@ module Fedex
             xml.TrackingNumberUniqueIdentifier @uuid         if @uuid
             xml.IncludeDetailedScans           @include_detailed_scans
             xml.PagingToken                    @paging_token if @paging_token
+            xml.ShipmentAccountNumber AppConfigs['fedex'][:account_number] if package_type == "FREE_FORM_REFERENCE"
           }
         end
         builder.doc.root.to_xml
       end
 
+      # Use version 6 of tracking API
       def service
         { :id => 'trck', :version => 6 }
       end

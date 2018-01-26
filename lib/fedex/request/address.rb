@@ -5,6 +5,9 @@ require 'fileutils'
 module Fedex
   module Request
     class Address < Base
+      # Don't let address validation calls block application if FedEx is sluggish
+      default_timeout 10
+
       def initialize(credentials, options={})
         requires!(options, :address)
         @credentials = credentials
@@ -13,9 +16,27 @@ module Fedex
         @address[:address] ||= @address[:street]
       end
 
+      def add_address_to_validate(xml)
+        # Create two street line entries to prevent false negatives
+        # when people include a company in an address line.
+        street_lines = (@address[:street].is_a? Array) ? @address[:street] : [@address[:street],'']
+
+        xml.AddressesToValidate{
+          xml.Address{
+            xml.StreetLines         street_lines[0]
+            xml.StreetLines         street_lines[1]
+            xml.City                @address[:city]
+            xml.StateOrProvinceCode @address[:state]
+            xml.PostalCode          @address[:postal_code]
+            xml.CountryCode         @address[:country]
+          }
+        }
+      end
+
       def process_request
         api_response = self.class.post(api_url, :body => build_xml)
         puts api_response if @debug == true
+
         response = parse_response(api_response)
         if success?(response)
           options = response[:address_validation_reply][:address_results][:proposed_address_details]
@@ -25,7 +46,7 @@ module Fedex
           error_message = if response[:address_validation_reply]
             [response[:address_validation_reply][:notifications]].flatten.first[:message]
           else
-            "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
+            api_response["Fault"]["detail"]["fault"]["reason"]
           end rescue $1
           raise RateError, error_message
         end

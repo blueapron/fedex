@@ -49,6 +49,8 @@ module Fedex
           add_shipping_charges_payment(xml)
           add_special_services(xml) if @shipping_options[:return_reason] || @shipping_options[:cod] || @shipping_options[:saturday_delivery]
           add_customs_clearance(xml) if @customs_clearance_detail
+          add_saturday_delivery_option(xml)
+          add_delivery_instructions(xml)
           add_custom_components(xml)
           xml.RateRequestTypes "ACCOUNT"
           add_packages(xml)
@@ -62,6 +64,19 @@ module Fedex
             xml.Value @mps[:total_weight][:value]
           }
         end
+      end
+
+      def add_saturday_delivery_option(xml)
+        if @shipping_options[:saturday_delivery]
+          xml.SpecialServicesRequested {
+            xml.SpecialServiceTypes "SATURDAY_DELIVERY"
+          }
+        end
+      end
+
+      def add_delivery_instructions(xml)
+        xml.DeliveryInstructions @shipping_options[:delivery_instructions] if
+          @shipping_options[:delivery_instructions]
       end
 
       # Hook that can be used to add custom parts.
@@ -127,12 +142,16 @@ module Fedex
 
       # Callback used after a failed shipment response.
       def failure_response(api_response, response)
-        error_message = if response[:process_shipment_reply]
-          [response[:process_shipment_reply][:notifications]].flatten.first[:message]
+        if response[:process_shipment_reply]
+          notifications = response[:process_shipment_reply][:notifications]
+          notification = [notifications].flatten.first
+          error_message = notification[:message]
+          error_code = notification[:code]
         else
-          "#{api_response["Fault"]["detail"]["fault"]["reason"]}\n--#{api_response["Fault"]["detail"]["fault"]["details"]["ValidationFailureDetail"]["message"].join("\n--")}"
+          error_message = api_response["Fault"]["detail"]["fault"]["reason"]
+          error_code = api_response["Fault"]["detail"]["fault"]["errorCode"]
         end rescue $1
-        raise RateError, error_message
+        raise RateError.new(error_message, code: error_code)
       end
 
       # Callback used after a successful shipment response.

@@ -102,7 +102,7 @@ module Fedex
     def pickup_availability(options = {})
       Request::PickupAvailability.new(@credentials, options).process_request
     end
-    
+
     # param [Hash] origin, A hash containing origin information
     # param [Hash] destination, A hash containing destination information
     # param [date] ship_date, A string containing ship date in YYYY-MM-DD format
@@ -110,6 +110,5 @@ module Fedex
     def service_availability(options = {})
       Request::ServiceAvailability.new(@credentials, options).process_request
     end
-
   end
 end
