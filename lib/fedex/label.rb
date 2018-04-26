@@ -3,7 +3,7 @@ require 'pathname'
 
 module Fedex
   class Label
-    attr_accessor :options, :image, :response_details
+    attr_accessor :options, :image, :response_details, :barcode
 
     # Initialize Fedex::Label Object
     # @param [Hash] options
@@ -14,6 +14,7 @@ module Fedex
       @options[:format] = label_details[:format]
       @options[:tracking_number] = package_details[:tracking_ids][:tracking_number]
       @options[:file_name] = label_details[:file_name]
+      @barcode = package_details[:operational_detail][:barcodes][:string_barcodes][:value]
 
       @image = Base64.decode64(options[:parts][:image]) if has_image?
 
