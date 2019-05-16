@@ -20,7 +20,6 @@ gem install fedex
 # Usage example:
 
 Define the shipper:
-
 ```ruby
 
 shipper = { :name => "Sender",
