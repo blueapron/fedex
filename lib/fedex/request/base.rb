@@ -12,7 +12,7 @@ module Fedex
       # If true the rate method will return the complete response from the Fedex Web Service
       attr_accessor :debug
       # Fedex Text URL
-      TEST_URL = 'https://wsbeta.fedex.com:443/xml/'
+      TEST_URL = "https://wsbeta.fedex.com:443/web-services/"
 
       # Fedex Production URL
       PRODUCTION_URL = "https://gateway.fedex.com:443/xml/"
@@ -149,8 +149,9 @@ module Fedex
         xml.ShippingChargesPayment{
           xml.PaymentType @shipping_options[:payment_type] ||= "SENDER"
           xml.Payor{
-            xml.AccountNumber (@shipping_options[:payor] && @shipping_options[:payor][:account_number]) || @credentials.account_number
-            xml.CountryCode @shipper[:country_code]
+            xml.ResponsibleParty {
+              xml.AccountNumber (@shipping_options[:payor] && @shipping_options[:payor][:account_number]) || @credentials.account_number
+            }
           }
         }
       end
@@ -271,7 +272,8 @@ module Fedex
 
       # Parse response, convert keys to underscore symbols
       def parse_response(response)
-        response = sanitize_response_keys(response.parsed_response)
+        response_body = response.parsed_response.dig('Envelope', 'Body') || response.parsed_response
+        sanitize_response_keys(response_body)
       end
 
       # Recursively sanitizes the response object by cleaning up any hash keys.

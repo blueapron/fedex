@@ -32,20 +32,29 @@ module Fedex
 
       # Build xml Fedex Web Service request
       def build_xml
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.GroundCloseRequest(:xmlns => "http://fedex.com/ws/close/v2"){
-            add_web_authentication_detail(xml)
-            add_client_detail(xml)
-            add_version(xml)
 
-            xml.TimeUpToWhichShipmentsAreToBeClosed Time.now.utc.iso8601(2)
+        builder = Nokogiri::XML::Builder.new do |xml|
+          xml[:soapenv].Envelope(
+            'xmlns:soapenv' => "http://schemas.xmlsoap.org/soap/envelope/",
+            'xmlns:v5' => "http://fedex.com/ws/close/v5"
+          ) {
+            xml['soapenv'].Header
+            xml['soapenv'].Body {
+              xml[:v5].GroundCloseRequest{
+                add_web_authentication_detail(xml)
+                add_client_detail(xml)
+                add_version(xml)
+
+                xml.TimeUpToWhichShipmentsAreToBeClosed Time.now.utc.iso8601(2)
+              }
+            }
           }
         end
         builder.doc.root.to_xml
       end
 
       def service
-        { :id => 'clos', :version => 2 }
+        { :id => 'clos', :version => 5 }
       end
 
       # Successful request

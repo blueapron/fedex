@@ -104,18 +104,26 @@ module Fedex
       # Build xml Fedex Web Service request
       def build_xml
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.ProcessShipmentRequest(:xmlns => "http://fedex.com/ws/ship/v10"){
-            add_web_authentication_detail(xml)
-            add_client_detail(xml)
-            add_version(xml)
-            add_requested_shipment(xml)
+          xml[:soapenv].Envelope(
+            'xmlns:soapenv' => "http://schemas.xmlsoap.org/soap/envelope/",
+            'xmlns:v23' => "http://fedex.com/ws/ship/v23"
+          ) {
+            xml['soapenv'].Header
+            xml['soapenv'].Body {
+              xml[:v23].ProcessShipmentRequest {
+                add_web_authentication_detail(xml)
+                add_client_detail(xml)
+                add_version(xml)
+                add_requested_shipment(xml)
+              }
+            }
           }
         end
         builder.doc.root.to_xml
       end
 
       def service
-        { :id => 'ship', :version => 10 }
+        { :id => 'ship', :version => 23 }
       end
 
       # Successful request

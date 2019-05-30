@@ -36,8 +36,8 @@ module Fedex
 
       @tracking_number = details[:tracking_number]
       @signature_name  = details[:delivery_signature_name]
-      @service_type    = details[:service_type]
-      @status          = details[:status_description]
+      @service_type    = details.dig(:service, :type)
+      @status          = details.dig(:status_detail, :description)
       if details.has_key?(:actual_delivery_timestamp)
         @delivery_at = Time.parse(details[:actual_delivery_timestamp])
       end

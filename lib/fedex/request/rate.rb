@@ -37,7 +37,7 @@ module Fedex
           add_recipient(xml)
           add_shipping_charges_payment(xml)
           add_customs_clearance(xml) if @customs_clearance
-          xml.RateRequestTypes "ACCOUNT"
+          xml.RateRequestTypes "LIST"
           add_packages(xml)
         }
       end
@@ -45,18 +45,26 @@ module Fedex
       # Build xml Fedex Web Service request
       def build_xml
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.RateRequest(:xmlns => "http://fedex.com/ws/rate/v10"){
-            add_web_authentication_detail(xml)
-            add_client_detail(xml)
-            add_version(xml)
-            add_requested_shipment(xml)
+          xml[:soapenv].Envelope(
+            'xmlns:soapenv' => "http://schemas.xmlsoap.org/soap/envelope/",
+            'xmlns:v24' => "http://fedex.com/ws/rate/v24"
+          ) {
+            xml['soapenv'].Header
+            xml['soapenv'].Body {
+              xml[:v24].RateRequest{
+                add_web_authentication_detail(xml)
+                add_client_detail(xml)
+                add_version(xml)
+                add_requested_shipment(xml)
+              }
+            }
           }
         end
         builder.doc.root.to_xml
       end
 
       def service
-        { :id => 'crs', :version => 10 }
+        { :id => 'crs', :version => 24 }
       end
 
       # Successful request

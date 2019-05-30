@@ -5,46 +5,47 @@ module Fedex
     let(:fedex) { Shipment.new(fedex_credentials) }
 
     context "shipments with tracking number", :vcr, :focus do
+      subject(:tracking_info) { fedex.track(options) }
+
+      let(:tracking_number) { '122816215025810' }
+
       let(:options) do
-        { :package_id             => "787544334890",
-          :package_type           => "TRACKING_NUMBER_OR_DOORTAG",
-          :include_detailed_scans => true
+        {
+          :package_id   => tracking_number,
+          :package_type => "TRACKING_NUMBER_OR_DOORTAG",
         }
-      end
-
-      it "returns events with tracking information" do
-        tracking_info = fedex.track(options)
-
-        tracking_info.events.count.should == 11
-      end
-
-      it "fails if using an invalid package type" do
-        fail_options = options
-
-        fail_options[:package_type] = "UNKNOWN_PACKAGE"
-
-        lambda { fedex.track(options) }.should raise_error
-      end
-
-      it "allows short hand tracking number queries" do
-        shorthand_options = options
-
-        shorthand_options.delete(:package_type)
-        tracking_number = shorthand_options.delete(:package_id)
-
-        shorthand_options[:tracking_number] = tracking_number
-
-        tracking_info = fedex.track(shorthand_options)
-
-        tracking_info.tracking_number.should == tracking_number
       end
 
       it "reports the status of the package" do
         tracking_info = fedex.track(options)
 
-        tracking_info.status.should == "Delivered"
+        expect(tracking_info).to have_attributes(
+          service_type:    "FEDEX_GROUND",
+          signature_name:  "ROLLINS",
+          status:          "Delivered",
+          tracking_number: "122816215025810"
+        )
       end
 
+      it "returns events with tracking information" do
+        expect(tracking_info.events.count).to eq 1
+      end
+
+      context "with short hand tracking number queries" do
+        let(:options) { { :tracking_number => tracking_number } }
+
+        it "tracks correctly" do
+          expect(tracking_info.tracking_number).to eq tracking_number
+        end
+      end
+
+      context 'with invalid package type' do
+        before { options[:package_type] = "UNKNOWN_PACKAGE" }
+
+        it 'raises an error' do
+          expect { subject }.to raise_error(RuntimeError, "Unknown package type 'UNKNOWN_PACKAGE'")
+        end
+      end
     end
   end
 end

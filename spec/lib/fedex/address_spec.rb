@@ -26,11 +26,12 @@ module Fedex
         it "validates the address" do
           address = fedex.validate_address(options)
 
-          address.residential.should be_true
-          address.business.should    be_false
-          address.score.should ==    100
-
-          address.postal_code.should == "06850-3901"
+          expect(address).to have_attributes(
+            residential: true,
+            business:    false,
+            score:       100,
+            postal_code: "06850-3901"
+          )
         end
       end
 

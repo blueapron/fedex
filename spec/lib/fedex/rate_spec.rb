@@ -109,9 +109,17 @@ module Fedex
                                    :value => '1254587' }
 
 
-          duties_payment = { :payment_type => "SENDER",
-                             :payor => { :account_number => "510087143",
-                                         :country_code => "US" } }
+          duties_payment = {
+            :payment_type => "SENDER",
+            :payor => {
+              :responsible_party => {
+                :account_number => "510087143",
+                :address => {
+                  :country_code => "US"
+                }
+              }
+            }
+          }
 
           customs_value = { :currency => "USD",
                             :amount => "200" }
@@ -139,8 +147,23 @@ module Fedex
             }
           ]
 
-          customs_clearance = { :broker => broker, :clearance_brokerage => clearance_brokerage, :importer_of_record => importer_of_record, :recipient_customs_id => recipient_customs_id, :duties_payment => duties_payment, :commodities => commodities }
-          rate = fedex.rate({:shipper => shipper, :recipient => canadian_recipient, :packages => packages, :service_type => "FEDEX_GROUND", :customs_clearance => customs_clearance})
+          customs_clearance = {
+            :brokers => { :broker => broker },
+            :clearance_brokerage => clearance_brokerage,
+            :importer_of_record => importer_of_record,
+            :recipient_customs_id => recipient_customs_id,
+            :duties_payment => duties_payment,
+            :commodities => commodities
+          }
+
+          rate = fedex.rate({
+            :shipper => shipper,
+            :recipient => canadian_recipient,
+            :packages => packages,
+            :service_type => "FEDEX_GROUND",
+            :customs_clearance => customs_clearance
+          })
+
           rate.should be_an_instance_of(Rate)
         end
       end

@@ -15,9 +15,8 @@ module Fedex
         @credentials  = credentials
 
         # Optional
-        @include_detailed_scans = options[:include_detailed_scans]
-        @uuid                   = options[:uuid]
-        @paging_token           = options[:paging_token]
+        @uuid         = options[:uuid]
+        @paging_token = options[:paging_token]
 
         unless package_type_valid?
           raise "Unknown package type '#{package_type}'"
@@ -30,7 +29,7 @@ module Fedex
         response = parse_response(api_response)
 
         if success?(response)
-          options = response[:track_reply][:track_details]
+          options = response[:track_reply][:completed_track_details][:track_details]
 
           Fedex::TrackingInformation.new(options)
         else
@@ -52,17 +51,24 @@ module Fedex
       # Build xml Fedex Web Service request
       def build_xml
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.TrackRequest(:xmlns => "http://fedex.com/ws/track/v#{service[:version]}"){
-            add_web_authentication_detail(xml)
-            add_client_detail(xml)
-            add_version(xml)
-            add_package_identifier(xml)
-            xml.ShipmentAccountNumber AppConfigs['fedex'][:account_number] if package_type == "FREE_FORM_REFERENCE"
-            xml.IncludeDetailedScans @include_detailed_scans
+          xml[:soapenv].Envelope(
+            'xmlns:soapenv' => "http://schemas.xmlsoap.org/soap/envelope/",
+            'xmlns:v16' => "http://fedex.com/ws/track/v16"
+          ) {
+            xml['soapenv'].Header
+            xml['soapenv'].Body {
+              xml['v16'].TrackRequest {
+                add_web_authentication_detail(xml)
+                add_client_detail(xml)
+                add_version(xml)
+                add_package_identifier(xml)
+                xml.ShipmentAccountNumber AppConfigs['fedex'][:account_number] if package_type == "FREE_FORM_REFERENCE"
 
-            # Optional
-            xml.TrackingNumberUniqueIdentifier @uuid if @uuid
-            xml.PagingToken @paging_token            if @paging_token
+                # Optional
+                xml.TrackingNumberUniqueIdentifier @uuid if @uuid
+                xml.PagingToken @paging_token            if @paging_token
+              }
+            }
           }
         end
         builder.doc.root.to_xml
@@ -70,13 +76,15 @@ module Fedex
 
       # Use version 6 of tracking API
       def service
-        { :id => 'trck', :version => 6 }
+        { :id => 'trck', :version => 16 }
       end
 
       def add_package_identifier(xml)
-        xml.PackageIdentifier{
-          xml.Value package_id
-          xml.Type  package_type
+        xml.SelectionDetails {
+          xml.PackageIdentifier{
+            xml.Type  package_type
+            xml.Value package_id
+          }
         }
       end
 
